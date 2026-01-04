@@ -1,0 +1,13 @@
+python -m venv venv
+venv\Scripts\Activate
+
+pip install "fastapi[standard]" sqlalchemy[asyncio] aiomysql alembic python-decouple python-jose[cryptography] passlib[dcrypt] cryptography
+
+pip freeze > requirements.txt
+
+fastapi dev app/main.py
+
+alembic init -t async alembic
+
+alembic revision --autogenerate -m "create table"
+alembic upgrade head

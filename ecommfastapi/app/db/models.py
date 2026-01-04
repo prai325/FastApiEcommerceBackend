@@ -1,0 +1,1 @@
+from app.account import models as account_models  # Import account models to register them with Base
