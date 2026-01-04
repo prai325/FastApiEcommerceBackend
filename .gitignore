@@ -1,0 +1,5 @@
+# Standard Python ignore
+__pycache__/
+.env
+venv/
+.pytest_cache/
