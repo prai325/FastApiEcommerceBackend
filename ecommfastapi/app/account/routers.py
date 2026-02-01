@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from fastapi.responses import JSONResponse
-from app.account.schemas import UserCreate, UserOut, UserLogin
-from app.account.services import create_user, authenticate_user, email_verification_send, verify_email_token
+from app.account.schemas import UserCreate, UserOut, UserLogin, PasswordChangeRequest, PasswordResetEmailRequest, PasswordResetRequest
+from app.account.services import create_user, authenticate_user, email_verification_send, verify_email_token, change_password, password_reset_email_send, verify_password_reset_token
 from app.db.config import SessionDep
 from app.account.utils import create_tokens, success_response, error_response, verify_refresh_token
 from app.account.models import User
@@ -28,8 +28,8 @@ async def login(session: SessionDep, user: UserLogin):
 
     # Convert ORM `User` to serializable dict using `UserOut` (pydantic v2 `from_attributes`).
     user_out = UserOut.model_validate(authenticated_user)
-    content = {"message": "Login successful", "tokens": tokens, "user": user_out.model_dump()}
 
+    # content = {"message": "Login successful", "tokens": tokens, "user": user_out.model_dump()}
     response = success_response(
         message="Login successful",
         data={
@@ -81,4 +81,16 @@ async def send_verification_email(user: User = Depends(get_current_user)):
 @router.get("/verify-email")
 async def verify_email(session: SessionDep, token: str):
         return await verify_email_token(session, token)
-   
+
+@router.post("/change-password")
+async def password_change(session: SessionDep, data: PasswordChangeRequest, user: User = Depends(get_current_user)):
+    await change_password(session, user, data)
+    return {"msg": "Password changed successfully"}
+
+@router.post("/send-password-reset-email")
+async def send_password_reset_email(session: SessionDep, data: PasswordResetEmailRequest):
+    return await password_reset_email_send(session, data)
+
+@router.post("/verify-password-reset-token")
+async def verify_password_reset_email(session: SessionDep, data: PasswordResetRequest):
+    return await verify_password_reset_token(session, data)

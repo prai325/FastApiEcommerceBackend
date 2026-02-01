@@ -16,6 +16,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = config("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", defa
 JWT_REFRESH_TOKEN_EXPIRE_DAYS = config("JWT_REFRESH_TOKEN_EXPIRE_DAYS", default=7, cast=int)
 
 EMAIL_VERIFICATION_TOKEN_TIME_HOUR = config("EMAIL_VERIFICATION_TOKEN_TIME_HOUR", default=1, cast=int)
+PASSWORD_RESET_TOKEN_TIME_HOUR = config("PASSWORD_RESET_TOKEN_TIME_HOUR", default=2, cast=int)
 
 pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
@@ -113,3 +114,13 @@ def verify_email_token_and_get_user_id(token: str, token_type: str):
     if not payload or payload.get("type") != token_type:
         return None
     return int(payload.get("sub"))
+
+async def get_user_by_email(session: AsyncSession, email: str):
+    stmt = select(User).where(User.email == email)
+    result = await session.scalars(stmt)
+    return result.first() 
+
+def create_password_reset_token(user_id: int):
+    expire = datetime.now(timezone.utc) + timedelta(hours=PASSWORD_RESET_TOKEN_TIME_HOUR)
+    to_encode = {"sub": str(user_id), "type": "password_reset", "exp": expire}
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
