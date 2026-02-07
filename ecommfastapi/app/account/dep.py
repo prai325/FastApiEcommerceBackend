@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status, Request
+from fastapi import HTTPException, status, Request, Depends
 from sqlalchemy import select
 from app.db.config import SessionDep
 from app.account.models import User
@@ -35,4 +35,12 @@ async def get_current_user(session: SessionDep, request: Request):
             detail="User not found",
             header={"WWW-Authenticate": "Bearer"}
         ) 
+    return user
+
+async def require_admin(user: User = Depends(get_current_user)):
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
     return user

@@ -3,9 +3,9 @@ from fastapi.responses import JSONResponse
 from app.account.schemas import UserCreate, UserOut, UserLogin, PasswordChangeRequest, PasswordResetEmailRequest, PasswordResetRequest
 from app.account.services import create_user, authenticate_user, email_verification_send, verify_email_token, change_password, password_reset_email_send, verify_password_reset_token
 from app.db.config import SessionDep
-from app.account.utils import create_tokens, success_response, error_response, verify_refresh_token
+from app.account.utils import create_tokens, success_response, error_response, verify_refresh_token, revoke_refresh_token
 from app.account.models import User
-from app.account.dep import get_current_user
+from app.account.dep import get_current_user, require_admin
 
 router = APIRouter()
 
@@ -94,3 +94,25 @@ async def send_password_reset_email(session: SessionDep, data: PasswordResetEmai
 @router.post("/verify-password-reset-token")
 async def verify_password_reset_email(session: SessionDep, data: PasswordResetRequest):
     return await verify_password_reset_token(session, data)
+
+@router.get("/admin")
+async def admin(user: User = Depends(require_admin)):
+    return {"msg": f"Welcome Admin {user.email}"}
+
+@router.post("/logout")
+async def logout(session: SessionDep, request: Request, user: User = Depends(get_current_user)):
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        await revoke_refresh_token(session, refresh_token)
+
+    response = success_response(
+        message="Logout successfully",
+        data=None,
+        status_code=200
+    )
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token")
+    return response
+    
+
+    
