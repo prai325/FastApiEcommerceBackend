@@ -1,1 +1,2 @@
 from app.account import models as account_models  # Import account models to register them with Base
+from app.product import models as product_category_models  # Import product and category models to register them with Base
